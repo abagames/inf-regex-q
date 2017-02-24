@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+  <title>inf-regex-q</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="material/material.min.css" type="text/css" />
+  <link rel="stylesheet" href="material/style.css" type="text/css" />
+  <script src="material/material.min.js"></script>
+  <script src='bundle.js'></script>
+</head>
+
+<body>
+  <div class="demo-layout mdl-layout mdl-layout--fixed-header mdl-js-layout mdl-color--grey-100">
+    <header class="demo-header mdl-layout__header mdl-layout__header--scroll mdl-color--grey-100 mdl-color-text--grey-800">
+      <div class="mdl-layout__header-row">
+        <span class="mdl-layout-title">inf-regex-q</span>
+        <div class="mdl-layout-spacer"></div>
+        <div class="mdl-textfield mdl-js-textfield mdl-textfield--expandable">
+        </div>
+      </div>
+    </header>
+    <div class="demo-ribbon"></div>
+    <main class="demo-main mdl-layout__content">
+      <div class="demo-container mdl-grid">
+        <div class="mdl-cell mdl-cell--2-col mdl-cell--hide-tablet mdl-cell--hide-phone"></div>
+        <div class="demo-content mdl-color--white mdl-shadow--4dp content mdl-color-text--grey-800 mdl-cell mdl-cell--8-col">
+          <div class="demo-crumbs mdl-color-text--grey-500">
+            <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+              <input class="mdl-textfield__input" type="text" id="regexp_input">
+              <label class="mdl-textfield__label" for="regexp_input">Regexp...</label>
+            </div>
+            <span id='input_count'></span>
+            <p>Input a regular expression that</p>
+          </div>
+        </div>
+      </div>
+      <div class="demo-container mdl-grid">
+        <div class="mdl-cell mdl-cell--2-col mdl-cell--hide-tablet mdl-cell--hide-phone"></div>
+        <div class="demo-card-wide mdl-card mdl-shadow--2dp mdl-cell mdl-cell--4-col">
+          <div class="mdl-card__title" style="background:lawngreen">
+            <h2 class="mdl-card__title-text">Should match</h2>
+          </div>
+          <div id="match" class="mdl-card__supporting-text">
+          </div>
+        </div>
+        <div class="demo-card-wide mdl-card mdl-shadow--2dp mdl-cell mdl-cell--4-col">
+          <div class="mdl-card__title" style="background: orangered">
+            <h2 class="mdl-card__title-text">Should not match</h2>
+          </div>
+          <div id="unmatch" class="mdl-card__supporting-text">
+          </div>
+        </div>
+      </div>
+      <footer class="demo-footer mdl-mini-footer">
+        <div class="mdl-mini-footer--left-section">
+          <ul class="mdl-mini-footer--link-list">
+            <li><a href="https://github.com/abagames/inf-regex-q">Source (GitHub)</a></li>
+          </ul>
+        </div>
+      </footer>
+    </main>
+  </div>
+</body>
+
+</html>
