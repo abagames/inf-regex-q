@@ -25,7 +25,7 @@ function genQuiz(seed: number) {
   random.setSeed(seed);
   let ans: string;
   let ansExp: RegExp;
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 10; i++) {
     ans = genPattern(random.getInt(3, 10));
     try {
       ansExp = new RegExp(ans);
@@ -38,6 +38,7 @@ function genQuiz(seed: number) {
       ans = null;
       continue;
     }
+    break;
   }
   if (ans === null) {
     genQuiz(Math.floor(seed / 2));
