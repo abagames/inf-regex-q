@@ -234,24 +234,60 @@ var RandExp = __webpack_require__(6);
 var random_1 = __webpack_require__(1);
 RandExp.prototype.randInt = function (from, to) { return random.getInt(from, to); };
 window.onload = init;
-var random;
+var version = '1';
+var quizRandom = new random_1.default();
+var random = new random_1.default();
 var matchStrings;
 var unmatchStrings;
 var regexpInput;
 var ansLength;
 var genStringsCount;
 function init() {
-    random = new random_1.default();
     regexpInput = document.getElementById('regexp_input');
     regexpInput.onkeydown = updateRegexpInput;
     regexpInput.onkeyup = updateRegexpInput;
-    genQuiz(random.getToMaxInt());
+    if (checkQuery() === false) {
+        nextQuiz();
+    }
+}
+function checkQuery() {
+    var query = window.location.search.substring(1);
+    if (query == null) {
+        return false;
+    }
+    var params = query.split('&');
+    var _version;
+    var _seed;
+    _.forEach(params, function (param) {
+        var pair = param.split('=');
+        if (pair[0] === 'v') {
+            _version = pair[1];
+        }
+        else if (pair[0] === 's') {
+            _seed = pair[1];
+        }
+    });
+    if (_version !== version || _seed == null) {
+        return false;
+    }
+    genQuiz(Number(_seed));
+}
+function nextQuiz() {
+    var seed = quizRandom.getToMaxInt();
+    genQuiz(seed);
+    var baseUrl = window.location.href.split('?')[0];
+    var url = baseUrl + "?v=" + version + "&s=" + seed;
+    try {
+        window.history.replaceState({}, '', url);
+    }
+    catch (e) { }
+    regexpInput.focus();
 }
 function genQuiz(seed) {
     random.setSeed(seed);
     var ans;
     var ansExp;
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 10; i++) {
         ans = genPattern(random.getInt(3, 10));
         try {
             ansExp = new RegExp(ans);
@@ -261,16 +297,18 @@ function genQuiz(seed) {
             continue;
         }
         genStrings(ansExp);
-        if (matchStrings.length < 1 || matchStrings.length > genStringsCount - 1) {
+        if (matchStrings.length < 2 || matchStrings.length > genStringsCount - 2) {
             ans = null;
             continue;
         }
+        break;
     }
     if (ans === null) {
         genQuiz(Math.floor(seed / 2));
         return;
     }
     regexpInput.value = prevRegexpInput = '';
+    regexpInput.removeAttribute('disabled');
     testRegexp = new RegExp('');
     ansLength = ans.length;
     regexpInput.setAttribute('maxlength', "" + ansLength);
@@ -347,30 +385,41 @@ function updateRegexpInput() {
     updateDisps();
 }
 function updateDisps() {
-    updateDisp(matchStrings, 'match');
-    updateDisp(unmatchStrings, 'unmatch');
+    var matchState = updateDisp(matchStrings, 'match');
+    var unmatchState = updateDisp(unmatchStrings, 'unmatch');
     document.getElementById('input_count').textContent =
         prevRegexpInput.length + " / " + ansLength;
+    if (matchState.isAllMatched && unmatchState.isAllUnmatched) {
+        regexpInput.setAttribute('disabled', '');
+        var solvedSnackbar = document.getElementById('solved-snackbar');
+        solvedSnackbar.MaterialSnackbar.showSnackbar({ message: 'Solved', timeout: 1500 });
+        setTimeout(nextQuiz, 1400);
+    }
 }
 function updateDisp(strings, id) {
+    var state = { isAllMatched: true, isAllUnmatched: true };
     var div = document.getElementById(id);
     div.innerHTML = '';
     _.forEach(strings, function (s) {
         var matchRsl;
         if (testRegexp == null) {
             matchRsl = "\n      <i class=\"material-icons\" style=\"color:sandybrown\">fullscreen</i>\n      <span style=\"color:sandybrown; font-size:10px\">Invalid</span>\n      ";
+            state.isAllMatched = state.isAllUnmatched = false;
         }
         else if (testRegexp.test(s)) {
             matchRsl = "\n      <i class=\"material-icons\" style=\"color:lawngreen\">check</i>\n      <span style=\"color:lawngreen; font-size:10px\">Matched</span>\n      ";
+            state.isAllUnmatched = false;
         }
         else {
             matchRsl = "\n      <i class=\"material-icons\" style=\"color:orangered\">close</i>\n      <span style=\"color:orangered; font-size:10px\">Unmatched</span>\n      ";
+            state.isAllMatched = false;
         }
         var isMatched = testRegexp;
         var l = document.createElement('div');
         l.innerHTML = "\n    <div class=\"mdl-grid\" style=\"padding: 0px\">\n    <div class=\"mdl-cell mdl-cell--6-col\">\n    " + matchRsl + "\n    </div>\n    <div class=\"mdl-cell mdl-cell--6-col\" style=\"color:black; font-size:16px\">\n    " + s + "\n    </div>\n    </div>\n    ";
         div.appendChild(l);
     });
+    return state;
 }
 
 

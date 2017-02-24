@@ -54,6 +54,7 @@ function nextQuiz() {
   try {
     window.history.replaceState({}, '', url);
   } catch (e) { }
+  regexpInput.focus();
 }
 
 function genQuiz(seed: number) {
@@ -69,7 +70,7 @@ function genQuiz(seed: number) {
       continue;
     }
     genStrings(ansExp);
-    if (matchStrings.length < 1 || matchStrings.length > genStringsCount - 1) {
+    if (matchStrings.length < 2 || matchStrings.length > genStringsCount - 2) {
       ans = null;
       continue;
     }
@@ -80,6 +81,7 @@ function genQuiz(seed: number) {
     return;
   }
   regexpInput.value = prevRegexpInput = '';
+  regexpInput.removeAttribute('disabled');
   testRegexp = new RegExp('');
   ansLength = ans.length;
   regexpInput.setAttribute('maxlength', `${ansLength}`);
@@ -153,13 +155,21 @@ function updateRegexpInput() {
 }
 
 function updateDisps() {
-  updateDisp(matchStrings, 'match');
-  updateDisp(unmatchStrings, 'unmatch');
+  const matchState = updateDisp(matchStrings, 'match');
+  const unmatchState = updateDisp(unmatchStrings, 'unmatch');
   document.getElementById('input_count').textContent =
-    `${prevRegexpInput.length} / ${ansLength}`
+    `${prevRegexpInput.length} / ${ansLength}`;
+  if (matchState.isAllMatched && unmatchState.isAllUnmatched) {
+    regexpInput.setAttribute('disabled', '');
+    const solvedSnackbar: any = document.getElementById('solved-snackbar');
+    solvedSnackbar.MaterialSnackbar.showSnackbar
+      ({ message: 'Solved', timeout: 1500 });
+    setTimeout(nextQuiz, 1400);
+  }
 }
 
 function updateDisp(strings: string[], id: string) {
+  let state = { isAllMatched: true, isAllUnmatched: true };
   const div = document.getElementById(id);
   div.innerHTML = '';
   _.forEach(strings, s => {
@@ -169,16 +179,19 @@ function updateDisp(strings: string[], id: string) {
       <i class="material-icons" style="color:sandybrown">fullscreen</i>
       <span style="color:sandybrown; font-size:10px">Invalid</span>
       `;
+      state.isAllMatched = state.isAllUnmatched = false;
     } else if (testRegexp.test(s)) {
       matchRsl = `
       <i class="material-icons" style="color:lawngreen">check</i>
       <span style="color:lawngreen; font-size:10px">Matched</span>
       `;
+      state.isAllUnmatched = false;
     } else {
       matchRsl = `
       <i class="material-icons" style="color:orangered">close</i>
       <span style="color:orangered; font-size:10px">Unmatched</span>
       `;
+      state.isAllMatched = false;
     }
     const isMatched = testRegexp
     const l = document.createElement('div');
@@ -194,4 +207,5 @@ function updateDisp(strings: string[], id: string) {
     `;
     div.appendChild(l);
   });
+  return state;
 }
