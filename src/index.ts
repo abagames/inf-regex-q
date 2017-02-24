@@ -6,7 +6,9 @@ RandExp.prototype.randInt = (from, to) => random.getInt(from, to);
 
 window.onload = init;
 
-let random: Random;
+const version = '1';
+let quizRandom = new Random();
+let random = new Random();
 let matchStrings: string[];
 let unmatchStrings: string[];
 let regexpInput: HTMLInputElement;
@@ -14,11 +16,44 @@ let ansLength: number;
 let genStringsCount: number;
 
 function init() {
-  random = new Random();
   regexpInput = <HTMLInputElement>document.getElementById('regexp_input');
   regexpInput.onkeydown = updateRegexpInput;
   regexpInput.onkeyup = updateRegexpInput;
-  genQuiz(random.getToMaxInt());
+  if (checkQuery() === false) {
+    nextQuiz();
+  }
+}
+
+function checkQuery() {
+  const query = window.location.search.substring(1);
+  if (query == null) {
+    return false;
+  }
+  let params = query.split('&');
+  let _version: string;
+  let _seed: string;
+  _.forEach(params, param => {
+    const pair = param.split('=');
+    if (pair[0] === 'v') {
+      _version = pair[1];
+    } else if (pair[0] === 's') {
+      _seed = pair[1];
+    }
+  });
+  if (_version !== version || _seed == null) {
+    return false;
+  }
+  genQuiz(Number(_seed));
+}
+
+function nextQuiz() {
+  const seed = quizRandom.getToMaxInt();
+  genQuiz(seed);
+  const baseUrl = window.location.href.split('?')[0];
+  const url = `${baseUrl}?v=${version}&s=${seed}`;
+  try {
+    window.history.replaceState({}, '', url);
+  } catch (e) { }
 }
 
 function genQuiz(seed: number) {
