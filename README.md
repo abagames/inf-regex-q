@@ -14,5 +14,5 @@ Regular expression quiz generator.
 - [x] Solved -> Found
 - [x] Gen repeat 16 times
 - [x] Remove same strings
-- [ ] 10 Quizes mode
+- [x] 10 Quizzes mode
 - [ ] Result screen and URL
