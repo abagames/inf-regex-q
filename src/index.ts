@@ -239,7 +239,7 @@ function updateDisp(strings: string[], id: string) {
   let state = { isAllMatched: true, isAllUnmatched: true };
   const div = document.getElementById(id);
   div.innerHTML = '';
-  _.forEach(strings, s => {
+  _.forEach(strings, (s, i) => {
     let matchRsl: string;
     if (testRegexp == null) {
       matchRsl = `
@@ -267,12 +267,12 @@ function updateDisp(strings: string[], id: string) {
     <div class="mdl-cell mdl-cell--6-col">
     ${matchRsl}
     </div>
-    <div class="mdl-cell mdl-cell--6-col" style="color:black; font-size:16px">
-    ${s}
+    <div id="${id}_${i}" class="mdl-cell mdl-cell--6-col" style="color:black; font-size:16px">
     </div>
     </div>
     `;
     div.appendChild(l);
+    document.getElementById(`${id}_${i}`).textContent = s;
   });
   return state;
 }
