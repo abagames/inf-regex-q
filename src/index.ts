@@ -69,7 +69,7 @@ function genQuiz(seed: number) {
   random.setSeed(seed);
   let ans: string;
   let ansExp: RegExp;
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 16; i++) {
     ans = genPattern(random.getInt(3, 10));
     try {
       ansExp = new RegExp(ans);
@@ -145,9 +145,13 @@ function genStrings(ansExp: RegExp) {
       }
     });
     if (ansExp.test(s)) {
-      matchStrings.push(s);
+      if (!_.some(matchStrings, s)) {
+        matchStrings.push(s);
+      }
     } else {
-      unmatchStrings.push(s);
+      if (!_.some(unmatchStrings, s)) {
+        unmatchStrings.push(s);
+      }
     }
   });
 }

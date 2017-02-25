@@ -12,6 +12,7 @@ Regular expression quiz generator.
 
 - [x] Pass button
 - [x] Solved -> Found
+- [x] Gen repeat 16 times
+- [x] Remove same strings
 - [ ] 10 Quizes mode
 - [ ] Result screen and URL
-- [ ] Gen repeat 16 times
