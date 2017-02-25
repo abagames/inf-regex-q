@@ -12,6 +12,8 @@ let random = new Random();
 let matchStrings: string[];
 let unmatchStrings: string[];
 let regexpInput: HTMLInputElement;
+let passButton: HTMLButtonElement;
+let showingPassButtonTimeout: number;
 let ansLength: number;
 let genStringsCount: number;
 
@@ -19,6 +21,8 @@ function init() {
   regexpInput = <HTMLInputElement>document.getElementById('regexp_input');
   regexpInput.onkeydown = updateRegexpInput;
   regexpInput.onkeyup = updateRegexpInput;
+  passButton = <HTMLButtonElement>document.getElementById('pass_button');
+  passButton.onclick = nextQuiz;
   if (checkQuery() === false) {
     nextQuiz();
   }
@@ -58,6 +62,10 @@ function nextQuiz() {
 }
 
 function genQuiz(seed: number) {
+  hidePassButton();
+  showingPassButtonTimeout = setTimeout(() => {
+    passButton.style.visibility = 'visible';
+  }, 10 * 1000);
   random.setSeed(seed);
   let ans: string;
   let ansExp: RegExp;
@@ -86,6 +94,13 @@ function genQuiz(seed: number) {
   ansLength = ans.length;
   regexpInput.setAttribute('maxlength', `${ansLength}`);
   updateDisps();
+}
+
+function hidePassButton() {
+  if (showingPassButtonTimeout != null) {
+    clearTimeout(showingPassButtonTimeout);
+  }
+  passButton.style.visibility = 'hidden';
 }
 
 function genPattern(len: number) {
@@ -161,9 +176,10 @@ function updateDisps() {
     `${prevRegexpInput.length} / ${ansLength}`;
   if (matchState.isAllMatched && unmatchState.isAllUnmatched) {
     regexpInput.setAttribute('disabled', '');
+    hidePassButton();
     const solvedSnackbar: any = document.getElementById('solved-snackbar');
     solvedSnackbar.MaterialSnackbar.showSnackbar
-      ({ message: 'Solved', timeout: 1500 });
+      ({ message: 'Found', timeout: 1500 });
     setTimeout(nextQuiz, 1400);
   }
 }
