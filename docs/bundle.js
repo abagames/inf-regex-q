@@ -240,15 +240,43 @@ var random = new random_1.default();
 var matchStrings;
 var unmatchStrings;
 var regexpInput;
+var passButton;
+var showingPassButtonTimeout;
 var ansLength;
 var genStringsCount;
+var quizCount;
+var quizBeginMills;
+var quizTimeInterval;
+var quizSeed;
+var elapsedTime;
+var totalQuizCount = 10;
 function init() {
     regexpInput = document.getElementById('regexp_input');
     regexpInput.onkeydown = updateRegexpInput;
     regexpInput.onkeyup = updateRegexpInput;
+    passButton = document.getElementById('pass_button');
+    passButton.onclick = function () {
+        if (quizCount == null) {
+            initQuiz();
+        }
+        else {
+            quizCount--;
+        }
+        nextQuiz();
+    };
+    initQuiz();
     if (checkQuery() === false) {
         nextQuiz();
     }
+}
+function initQuiz() {
+    quizCount = 0;
+    quizBeginMills = new Date().getTime();
+    if (quizTimeInterval != null) {
+        clearTimeout(quizTimeInterval);
+    }
+    quizTimeInterval = setInterval(updateQuizTime, 1000);
+    updateQuizTime();
 }
 function checkQuery() {
     var query = window.location.search.substring(1);
@@ -258,6 +286,7 @@ function checkQuery() {
     var params = query.split('&');
     var _version;
     var _seed;
+    var _time;
     _.forEach(params, function (param) {
         var pair = param.split('=');
         if (pair[0] === 'v') {
@@ -266,28 +295,50 @@ function checkQuery() {
         else if (pair[0] === 's') {
             _seed = pair[1];
         }
+        else if (pair[0] === 't') {
+            _time = Number(pair[1]);
+        }
     });
     if (_version !== version || _seed == null) {
         return false;
     }
-    genQuiz(Number(_seed));
-}
-function nextQuiz() {
-    var seed = quizRandom.getToMaxInt();
-    genQuiz(seed);
-    var baseUrl = window.location.href.split('?')[0];
-    var url = baseUrl + "?v=" + version + "&s=" + seed;
-    try {
-        window.history.replaceState({}, '', url);
+    nextQuiz(Number(_seed));
+    if (_time != null) {
+        endQuiz(_time);
     }
-    catch (e) { }
+}
+function nextQuiz(seed) {
+    if (seed === void 0) { seed = null; }
+    quizCount++;
+    if (quizCount > totalQuizCount) {
+        endQuiz();
+        return;
+    }
+    dispNextQuiz();
+    if (seed == null) {
+        seed = quizRandom.getToMaxInt();
+    }
+    genQuiz(seed);
+    createUrl();
     regexpInput.focus();
 }
+function dispNextQuiz() {
+    var qd = document.getElementById('quiz_count');
+    qd.textContent = "Q." + quizCount;
+    hidePassButton();
+    showingPassButtonTimeout = setTimeout(function () {
+        passButton.style.visibility = 'visible';
+    }, 30 * 1000);
+    regexpInput.value = prevRegexpInput = '';
+    regexpInput.removeAttribute('disabled');
+    testRegexp = new RegExp('');
+}
 function genQuiz(seed) {
+    quizSeed = seed;
     random.setSeed(seed);
     var ans;
     var ansExp;
-    for (var i = 0; i < 10; i++) {
+    for (var i = 0; i < 16; i++) {
         ans = genPattern(random.getInt(3, 10));
         try {
             ansExp = new RegExp(ans);
@@ -297,7 +348,8 @@ function genQuiz(seed) {
             continue;
         }
         genStrings(ansExp);
-        if (matchStrings.length < 2 || matchStrings.length > genStringsCount - 2) {
+        if (matchStrings.length < 2 || matchStrings.length > genStringsCount - 2 ||
+            unmatchStrings.length < 2) {
             ans = null;
             continue;
         }
@@ -307,9 +359,6 @@ function genQuiz(seed) {
         genQuiz(Math.floor(seed / 2));
         return;
     }
-    regexpInput.value = prevRegexpInput = '';
-    regexpInput.removeAttribute('disabled');
-    testRegexp = new RegExp('');
     ansLength = ans.length;
     regexpInput.setAttribute('maxlength', "" + ansLength);
     updateDisps();
@@ -320,21 +369,21 @@ function genPattern(len) {
     for (var i = 0; i < len; i++) {
         var pr = random.get();
         if (pr < 0.1) {
-            var br = new RandExp("\\^?[a-z]{" + random.getInt(2, 4) + "}").gen();
+            var br = new RandExp("\\^?[a-z0-9]{" + random.getInt(2, 4) + "}").gen();
             p += "[" + br + "]";
         }
-        else if (pr < 0.15) {
+        else if (pr < 0.2) {
             p += "{" + random.getInt(2, 5) + "}";
         }
-        else if (pr < 0.2) {
+        else if (pr < 0.3) {
             var bl = random.getInt(1, len - i);
             p += "(" + genPattern(bl) + ")";
             i += bl;
         }
-        else if (pr < 0.6) {
+        else if (pr < 0.8) {
             p += randChars[random.getInt(randChars.length)];
         }
-        else if (pr < 0.8) {
+        else if (pr < 0.9) {
             p += String.fromCharCode('0'.charCodeAt(0) + random.getInt(10));
         }
         else {
@@ -361,12 +410,29 @@ function genStrings(ansExp) {
             }
         });
         if (ansExp.test(s)) {
-            matchStrings.push(s);
+            if (!_.some(matchStrings, function (ms) { return s === ms; })) {
+                matchStrings.push(s);
+            }
         }
         else {
-            unmatchStrings.push(s);
+            if (!_.some(unmatchStrings, function (us) { return s === us; })) {
+                unmatchStrings.push(s);
+            }
         }
     });
+}
+function endQuiz(time) {
+    if (time === void 0) { time = null; }
+    quizCount = totalQuizCount + 1;
+    regexpInput.setAttribute('disabled', '');
+    clearInterval(quizTimeInterval);
+    updateQuizTime(time);
+    var qd = document.getElementById('quiz_count');
+    qd.textContent = "You found " + totalQuizCount + " regexps in";
+    createUrl();
+    quizCount = null;
+    passButton.textContent = 'Retry';
+    passButton.style.visibility = 'visible';
 }
 var prevRegexpInput;
 var testRegexp;
@@ -391,8 +457,9 @@ function updateDisps() {
         prevRegexpInput.length + " / " + ansLength;
     if (matchState.isAllMatched && unmatchState.isAllUnmatched) {
         regexpInput.setAttribute('disabled', '');
+        hidePassButton();
         var solvedSnackbar = document.getElementById('solved-snackbar');
-        solvedSnackbar.MaterialSnackbar.showSnackbar({ message: 'Solved', timeout: 1500 });
+        solvedSnackbar.MaterialSnackbar.showSnackbar({ message: 'Found', timeout: 1500 });
         setTimeout(nextQuiz, 1400);
     }
 }
@@ -420,6 +487,33 @@ function updateDisp(strings, id) {
         div.appendChild(l);
     });
     return state;
+}
+function updateQuizTime(time) {
+    if (time === void 0) { time = null; }
+    elapsedTime = time == null ? new Date().getTime() - quizBeginMills : time;
+    var seconds = Math.floor(elapsedTime / 1000) % 60;
+    var minutes = Math.floor(elapsedTime / (1000 * 60)) % 60;
+    var td = document.getElementById('quiz_time');
+    td.textContent =
+        "" + (minutes < 10 ? '0' : '0') + minutes + " : " + (seconds < 10 ? '0' : '') + seconds;
+}
+function hidePassButton() {
+    if (showingPassButtonTimeout != null) {
+        clearTimeout(showingPassButtonTimeout);
+    }
+    passButton.style.visibility = 'hidden';
+    passButton.textContent = 'Pass';
+}
+function createUrl() {
+    var baseUrl = window.location.href.split('?')[0];
+    var url = baseUrl + "?v=" + version + "&s=" + quizSeed;
+    if (quizCount > totalQuizCount) {
+        url += "&t=" + elapsedTime;
+    }
+    try {
+        window.history.replaceState({}, '', url);
+    }
+    catch (e) { }
 }
 
 

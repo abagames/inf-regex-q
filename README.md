@@ -7,12 +7,3 @@ Regular expression quiz generator.
 [randexp.js](https://fent.github.io/randexp.js/) /
 [lodash](https://lodash.com/) /
 [Material Design Lite](https://getmdl.io/index.html)
-
-### ToDos
-
-- [x] Pass button
-- [x] Solved -> Found
-- [x] Gen repeat 16 times
-- [x] Remove same strings
-- [x] 10 Quizzes mode
-- [ ] Result screen and URL

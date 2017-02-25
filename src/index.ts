@@ -19,6 +19,9 @@ let genStringsCount: number;
 let quizCount: number;
 let quizBeginMills: number;
 let quizTimeInterval: number;
+let quizSeed: number;
+let elapsedTime: number;
+const totalQuizCount = 10;
 
 function init() {
   regexpInput = <HTMLInputElement>document.getElementById('regexp_input');
@@ -45,16 +48,8 @@ function initQuiz() {
   if (quizTimeInterval != null) {
     clearTimeout(quizTimeInterval);
   }
-  quizTimeInterval = setInterval(updateQuitTime, 1000);
-  updateQuitTime();
-}
-
-function updateQuitTime() {
-  const td = document.getElementById('quiz_time');
-  const duration = new Date().getTime() - quizBeginMills;
-  let seconds = Math.floor(duration / 1000) % 60;
-  let minutes = Math.floor(duration / (1000 * 60)) % 60;
-  td.textContent = `${minutes < 10 ? '0' : '0'}${minutes} : ${seconds < 10 ? '0' : ''}${seconds}`;
+  quizTimeInterval = setInterval(updateQuizTime, 1000);
+  updateQuizTime();
 }
 
 function checkQuery() {
@@ -65,43 +60,55 @@ function checkQuery() {
   let params = query.split('&');
   let _version: string;
   let _seed: string;
+  let _time: number;
   _.forEach(params, param => {
     const pair = param.split('=');
     if (pair[0] === 'v') {
       _version = pair[1];
     } else if (pair[0] === 's') {
       _seed = pair[1];
+    } else if (pair[0] === 't') {
+      _time = Number(pair[1]);
     }
   });
   if (_version !== version || _seed == null) {
     return false;
   }
-  genQuiz(Number(_seed));
+  nextQuiz(Number(_seed));
+  if (_time != null) {
+    endQuiz(_time);
+  }
 }
 
-function nextQuiz() {
-  const seed = quizRandom.getToMaxInt();
-  genQuiz(seed);
-  const baseUrl = window.location.href.split('?')[0];
-  const url = `${baseUrl}?v=${version}&s=${seed}`;
-  try {
-    window.history.replaceState({}, '', url);
-  } catch (e) { }
-  regexpInput.focus();
-}
-
-function genQuiz(seed: number) {
+function nextQuiz(seed: number = null) {
   quizCount++;
-  if (quizCount > 10) {
+  if (quizCount > totalQuizCount) {
     endQuiz();
     return;
   }
+  dispNextQuiz();
+  if (seed == null) {
+    seed = quizRandom.getToMaxInt();
+  }
+  genQuiz(seed);
+  createUrl();
+  regexpInput.focus();
+}
+
+function dispNextQuiz() {
   const qd = document.getElementById('quiz_count');
   qd.textContent = `Q.${quizCount}`;
   hidePassButton();
   showingPassButtonTimeout = setTimeout(() => {
     passButton.style.visibility = 'visible';
-  }, 10 * 1000);
+  }, 30 * 1000);
+  regexpInput.value = prevRegexpInput = '';
+  regexpInput.removeAttribute('disabled');
+  testRegexp = new RegExp('');
+}
+
+function genQuiz(seed: number) {
+  quizSeed = seed;
   random.setSeed(seed);
   let ans: string;
   let ansExp: RegExp;
@@ -125,20 +132,9 @@ function genQuiz(seed: number) {
     genQuiz(Math.floor(seed / 2));
     return;
   }
-  regexpInput.value = prevRegexpInput = '';
-  regexpInput.removeAttribute('disabled');
-  testRegexp = new RegExp('');
   ansLength = ans.length;
   regexpInput.setAttribute('maxlength', `${ansLength}`);
   updateDisps();
-}
-
-function hidePassButton() {
-  if (showingPassButtonTimeout != null) {
-    clearTimeout(showingPassButtonTimeout);
-  }
-  passButton.style.visibility = 'hidden';
-  passButton.textContent = 'Pass';
 }
 
 function genPattern(len: number) {
@@ -147,17 +143,17 @@ function genPattern(len: number) {
   for (let i = 0; i < len; i++) {
     const pr = random.get();
     if (pr < 0.1) {
-      const br = new RandExp(`\\^?[a-z]{${random.getInt(2, 4)}}`).gen();
+      const br = new RandExp(`\\^?[a-z0-9]{${random.getInt(2, 4)}}`).gen();
       p += `[${br}]`;
-    } else if (pr < 0.15) {
-      p += `{${random.getInt(2, 5)}}`;
     } else if (pr < 0.2) {
+      p += `{${random.getInt(2, 5)}}`;
+    } else if (pr < 0.3) {
       const bl = random.getInt(1, len - i);
       p += `(${genPattern(bl)})`;
       i += bl;
-    } else if (pr < 0.6) {
-      p += randChars[random.getInt(randChars.length)];
     } else if (pr < 0.8) {
+      p += randChars[random.getInt(randChars.length)];
+    } else if (pr < 0.9) {
       p += String.fromCharCode('0'.charCodeAt(0) + random.getInt(10));
     } else {
       p += String.fromCharCode('a'.charCodeAt(0) + random.getInt(26));
@@ -194,10 +190,14 @@ function genStrings(ansExp: RegExp) {
   });
 }
 
-function endQuiz() {
+function endQuiz(time: number = null) {
+  quizCount = totalQuizCount + 1;
+  regexpInput.setAttribute('disabled', '');
   clearInterval(quizTimeInterval);
+  updateQuizTime(time);
   const qd = document.getElementById('quiz_count');
-  qd.textContent = 'You found 10 regexps in';
+  qd.textContent = `You found ${totalQuizCount} regexps in`;
+  createUrl();
   quizCount = null;
   passButton.textContent = 'Retry';
   passButton.style.visibility = 'visible';
@@ -275,4 +275,32 @@ function updateDisp(strings: string[], id: string) {
     div.appendChild(l);
   });
   return state;
+}
+
+function updateQuizTime(time: number = null) {
+  elapsedTime = time == null ? new Date().getTime() - quizBeginMills : time;
+  let seconds = Math.floor(elapsedTime / 1000) % 60;
+  let minutes = Math.floor(elapsedTime / (1000 * 60)) % 60;
+  const td = document.getElementById('quiz_time');
+  td.textContent =
+    `${minutes < 10 ? '0' : '0'}${minutes} : ${seconds < 10 ? '0' : ''}${seconds}`;
+}
+
+function hidePassButton() {
+  if (showingPassButtonTimeout != null) {
+    clearTimeout(showingPassButtonTimeout);
+  }
+  passButton.style.visibility = 'hidden';
+  passButton.textContent = 'Pass';
+}
+
+function createUrl() {
+  const baseUrl = window.location.href.split('?')[0];
+  let url = `${baseUrl}?v=${version}&s=${quizSeed}`;
+  if (quizCount > totalQuizCount) {
+    url += `&t=${elapsedTime}`;
+  }
+  try {
+    window.history.replaceState({}, '', url);
+  } catch (e) { }
 }
