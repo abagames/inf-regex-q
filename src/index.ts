@@ -6,7 +6,7 @@ RandExp.prototype.randInt = (from, to) => random.getInt(from, to);
 
 window.onload = init;
 
-const version = '1';
+const currentVersion = '11';
 let quizRandom = new Random();
 let random = new Random();
 let matchStrings: string[];
@@ -71,16 +71,16 @@ function checkQuery() {
       _time = Number(pair[1]);
     }
   });
-  if (_version !== version || _seed == null) {
+  if (_seed == null) {
     return false;
   }
-  nextQuiz(Number(_seed));
+  nextQuiz(Number(_seed), _version);
   if (_time != null) {
-    endQuiz(_time);
+    endQuiz(_time, _version);
   }
 }
 
-function nextQuiz(seed: number = null) {
+function nextQuiz(seed: number = null, version: string = currentVersion) {
   quizCount++;
   if (quizCount > totalQuizCount) {
     endQuiz();
@@ -90,8 +90,8 @@ function nextQuiz(seed: number = null) {
   if (seed == null) {
     seed = quizRandom.getToMaxInt();
   }
-  genQuiz(seed);
-  createUrl();
+  genQuiz(seed, version);
+  createUrl(version);
   regexpInput.focus();
 }
 
@@ -107,20 +107,20 @@ function dispNextQuiz() {
   testRegexp = new RegExp('');
 }
 
-function genQuiz(seed: number) {
+function genQuiz(seed: number, version: string) {
   quizSeed = seed;
   random.setSeed(seed);
   let ans: string;
   let ansExp: RegExp;
   for (let i = 0; i < 16; i++) {
-    ans = genPattern(random.getInt(3, 10));
+    ans = genPattern(random.getInt(3, 10), version);
     try {
       ansExp = new RegExp(ans);
     } catch (e) {
       ans = null;
       continue;
     }
-    genStrings(ansExp);
+    genStrings(ansExp, ans, version);
     if (matchStrings.length < 2 || matchStrings.length > genStringsCount - 2 ||
       unmatchStrings.length < 2) {
       ans = null;
@@ -129,7 +129,7 @@ function genQuiz(seed: number) {
     break;
   }
   if (ans === null) {
-    genQuiz(Math.floor(seed / 2));
+    genQuiz(Math.floor(seed / 2), version);
     return;
   }
   ansLength = ans.length;
@@ -137,7 +137,7 @@ function genQuiz(seed: number) {
   updateDisps();
 }
 
-function genPattern(len: number) {
+function genPattern(len: number, version: string) {
   const randChars = ['*', '+', '?', '.', '|'];
   let p = '';
   for (let i = 0; i < len; i++) {
@@ -149,7 +149,7 @@ function genPattern(len: number) {
       p += `{${random.getInt(2, 5)}}`;
     } else if (pr < 0.3) {
       const bl = random.getInt(1, len - i);
-      p += `(${genPattern(bl)})`;
+      p += `(${genPattern(bl, version)})`;
       i += bl;
     } else if (pr < 0.8) {
       p += randChars[random.getInt(randChars.length)];
@@ -162,12 +162,21 @@ function genPattern(len: number) {
   return p;
 }
 
-function genStrings(ansExp: RegExp) {
+function genStrings(ansExp: RegExp, ans: string, version: string) {
   matchStrings = [];
   unmatchStrings = [];
   const randExp = new RandExp(ansExp);
   randExp.max = 3;
   genStringsCount = random.get(5, 11);
+  let ansLetters = [];
+  _.forEach(ans, c => {
+    const cc = c.charCodeAt(0);
+    if ((cc >= '0'.charCodeAt(0) && cc <= '9'.charCodeAt(0)) ||
+      (cc >= 'a'.charCodeAt(0) && cc <= 'z'.charCodeAt(0)) ||
+      (cc >= 'A'.charCodeAt(0) && cc <= 'Z'.charCodeAt(0))) {
+      ansLetters.push(c);
+    }
+  });
   _.times(genStringsCount, () => {
     let s: string = randExp.gen();
     _.times(random.getInt(0, 3), () => {
@@ -175,7 +184,10 @@ function genStrings(ansExp: RegExp) {
       if (s.length >= 3 && random.get() < 0.5) {
         s = s.slice(0, sp) + s.slice(sp + 1);
       } else {
-        s = s.slice(0, sp) + new RandExp(/[a-z0-9]/).gen() + s.slice(sp);
+        const ac =
+          version === '1' ? new RandExp(/[a-z0-9]/).gen() :
+            ansLetters[random.getInt(ansLetters.length)];
+        s = s.slice(0, sp) + ac + s.slice(sp);
       }
     });
     if (ansExp.test(s)) {
@@ -190,14 +202,14 @@ function genStrings(ansExp: RegExp) {
   });
 }
 
-function endQuiz(time: number = null) {
+function endQuiz(time: number = null, version: string = currentVersion) {
   quizCount = totalQuizCount + 1;
   regexpInput.setAttribute('disabled', '');
   clearInterval(quizTimeInterval);
   updateQuizTime(time);
   const qd = document.getElementById('quiz_count');
   qd.textContent = `You found ${totalQuizCount} regexps in`;
-  createUrl();
+  createUrl(version);
   quizCount = null;
   passButton.textContent = 'Retry';
   passButton.style.visibility = 'visible';
@@ -294,7 +306,7 @@ function hidePassButton() {
   passButton.textContent = 'Pass';
 }
 
-function createUrl() {
+function createUrl(version: string = currentVersion) {
   const baseUrl = window.location.href.split('?')[0];
   let url = `${baseUrl}?v=${version}&s=${quizSeed}`;
   if (quizCount > totalQuizCount) {
