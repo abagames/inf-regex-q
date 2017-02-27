@@ -325,7 +325,7 @@ function updateDisp(strings: string[], id: string) {
     const isMatched = testRegexp
     const l = document.createElement('div');
     l.innerHTML = `
-    <div class="mdl-grid" style="padding: 0px">
+    <div class="mdl-grid" style="padding: 0px 10px">
     <div class="mdl-cell mdl-cell--6-col">
     ${matchRsl}
     </div>

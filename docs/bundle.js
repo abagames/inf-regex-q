@@ -548,7 +548,7 @@ function updateDisp(strings, id) {
         }
         var isMatched = testRegexp;
         var l = document.createElement('div');
-        l.innerHTML = "\n    <div class=\"mdl-grid\" style=\"padding: 0px\">\n    <div class=\"mdl-cell mdl-cell--6-col\">\n    " + matchRsl + "\n    </div>\n    <div id=\"" + id + "_" + i + "\" class=\"mdl-cell mdl-cell--6-col\" style=\"color:black; font-size:16px\">\n    </div>\n    </div>\n    ";
+        l.innerHTML = "\n    <div class=\"mdl-grid\" style=\"padding: 0px 10px\">\n    <div class=\"mdl-cell mdl-cell--6-col\">\n    " + matchRsl + "\n    </div>\n    <div id=\"" + id + "_" + i + "\" class=\"mdl-cell mdl-cell--6-col\" style=\"color:black; font-size:16px\">\n    </div>\n    </div>\n    ";
         div.appendChild(l);
         document.getElementById(id + "_" + i).textContent = s;
     });
