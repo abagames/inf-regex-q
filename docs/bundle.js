@@ -235,6 +235,7 @@ var random_1 = __webpack_require__(1);
 RandExp.prototype.randInt = function (from, to) { return random.getInt(from, to); };
 window.onload = init;
 var currentVersion = '11';
+var validSeed = 0;
 var quizRandom = new random_1.default();
 var random = new random_1.default();
 var matchStrings;
@@ -339,7 +340,7 @@ function genQuiz(seed, version) {
     random.setSeed(seed);
     var ans;
     var ansExp;
-    for (var i = 0; i < 16; i++) {
+    for (var i = 0; i < 1000; i++) {
         ans = genPattern(random.getInt(3, 10), version);
         try {
             ansExp = new RegExp(ans);
@@ -357,7 +358,7 @@ function genQuiz(seed, version) {
         break;
     }
     if (ans === null) {
-        genQuiz(Math.floor(seed / 2), version);
+        genQuiz(validSeed, version);
         return;
     }
     ansLength = ans.length;
@@ -408,6 +409,9 @@ function genStrings(ansExp, ans, version) {
             ansLetters.push(c);
         }
     });
+    if (ansLetters.length <= 0) {
+        ansLetters.push('a');
+    }
     _.times(genStringsCount, function () {
         var s = randExp.gen();
         _.times(random.getInt(0, 3), function () {
@@ -509,7 +513,7 @@ function updateQuizTime(time) {
     var minutes = Math.floor(elapsedTime / (1000 * 60)) % 60;
     var td = document.getElementById('quiz_time');
     td.textContent =
-        "" + (minutes < 10 ? '0' : '0') + minutes + " : " + (seconds < 10 ? '0' : '') + seconds;
+        "" + (minutes < 10 ? '0' : '') + minutes + " : " + (seconds < 10 ? '0' : '') + seconds;
 }
 function hidePassButton() {
     if (showingPassButtonTimeout != null) {

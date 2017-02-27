@@ -7,6 +7,7 @@ RandExp.prototype.randInt = (from, to) => random.getInt(from, to);
 window.onload = init;
 
 const currentVersion = '11';
+const validSeed = 0;
 let quizRandom = new Random();
 let random = new Random();
 let matchStrings: string[];
@@ -112,7 +113,7 @@ function genQuiz(seed: number, version: string) {
   random.setSeed(seed);
   let ans: string;
   let ansExp: RegExp;
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 1000; i++) {
     ans = genPattern(random.getInt(3, 10), version);
     try {
       ansExp = new RegExp(ans);
@@ -129,7 +130,7 @@ function genQuiz(seed: number, version: string) {
     break;
   }
   if (ans === null) {
-    genQuiz(Math.floor(seed / 2), version);
+    genQuiz(validSeed, version);
     return;
   }
   ansLength = ans.length;
@@ -177,6 +178,9 @@ function genStrings(ansExp: RegExp, ans: string, version: string) {
       ansLetters.push(c);
     }
   });
+  if (ansLetters.length <= 0) {
+    ansLetters.push('a');
+  }
   _.times(genStringsCount, () => {
     let s: string = randExp.gen();
     _.times(random.getInt(0, 3), () => {
@@ -295,7 +299,7 @@ function updateQuizTime(time: number = null) {
   let minutes = Math.floor(elapsedTime / (1000 * 60)) % 60;
   const td = document.getElementById('quiz_time');
   td.textContent =
-    `${minutes < 10 ? '0' : '0'}${minutes} : ${seconds < 10 ? '0' : ''}${seconds}`;
+    `${minutes < 10 ? '0' : ''}${minutes} : ${seconds < 10 ? '0' : ''}${seconds}`;
 }
 
 function hidePassButton() {
