@@ -234,7 +234,7 @@ var RandExp = __webpack_require__(6);
 var random_1 = __webpack_require__(1);
 RandExp.prototype.randInt = function (from, to) { return random.getInt(from, to); };
 window.onload = init;
-var currentVersion = '11';
+var currentVersion = '12';
 var validSeed = 0;
 var quizRandom = new random_1.default();
 var random = new random_1.default();
@@ -350,8 +350,11 @@ function genQuiz(seed, version) {
             continue;
         }
         genStrings(ansExp, ans, version);
-        if (matchStrings.length < 2 || matchStrings.length > genStringsCount - 2 ||
-            unmatchStrings.length < 2) {
+        if (matchStrings.length < 2 || unmatchStrings.length < 2) {
+            ans = null;
+            continue;
+        }
+        if (Number(currentVersion) >= 12 && !checkStrings()) {
             ans = null;
             continue;
         }
@@ -402,10 +405,7 @@ function genStrings(ansExp, ans, version) {
     genStringsCount = random.get(5, 11);
     var ansLetters = [];
     _.forEach(ans, function (c) {
-        var cc = c.charCodeAt(0);
-        if ((cc >= '0'.charCodeAt(0) && cc <= '9'.charCodeAt(0)) ||
-            (cc >= 'a'.charCodeAt(0) && cc <= 'z'.charCodeAt(0)) ||
-            (cc >= 'A'.charCodeAt(0) && cc <= 'Z'.charCodeAt(0))) {
+        if (checkIsNumberOfAlphabet(c)) {
             ansLetters.push(c);
         }
     });
@@ -436,6 +436,54 @@ function genStrings(ansExp, ans, version) {
             }
         }
     });
+}
+function checkStrings() {
+    var mws = createWords(matchStrings);
+    var umws = createWords(unmatchStrings);
+    mws = _.filter(mws, function (w) { return !_.some(umws, function (uw) { return w === uw; }); });
+    return mws.length <= 0;
+}
+function createWords(strings) {
+    var ws = filterWords(strings[0]);
+    var _loop_1 = function (i) {
+        var nws = filterWords(strings[i]);
+        ws = _.filter(ws, function (w) { return _.some(nws, function (nw) { return nw === w; }); });
+    };
+    for (var i = 1; i < strings.length; i++) {
+        _loop_1(i);
+    }
+    return ws;
+}
+function filterWords(s) {
+    var ws = [];
+    var w = '';
+    _.forEach(s, function (c) {
+        if (checkIsNumberOfAlphabet(c)) {
+            w += c;
+            addWord(ws, w);
+        }
+        else {
+            w = '';
+        }
+    });
+    return ws;
+}
+function addWord(ws, w) {
+    var _loop_2 = function (i) {
+        var pw = w.substr(i);
+        if (!_.some(ws, function (w) { return w === pw; })) {
+            ws.push(pw);
+        }
+    };
+    for (var i = 0; i < w.length; i++) {
+        _loop_2(i);
+    }
+}
+function checkIsNumberOfAlphabet(c) {
+    var cc = c.charCodeAt(0);
+    return (cc >= '0'.charCodeAt(0) && cc <= '9'.charCodeAt(0)) ||
+        (cc >= 'a'.charCodeAt(0) && cc <= 'z'.charCodeAt(0)) ||
+        (cc >= 'A'.charCodeAt(0) && cc <= 'Z'.charCodeAt(0));
 }
 function endQuiz(time, version) {
     if (time === void 0) { time = null; }

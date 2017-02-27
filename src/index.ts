@@ -6,7 +6,7 @@ RandExp.prototype.randInt = (from, to) => random.getInt(from, to);
 
 window.onload = init;
 
-const currentVersion = '11';
+const currentVersion = '12';
 const validSeed = 0;
 let quizRandom = new Random();
 let random = new Random();
@@ -122,8 +122,11 @@ function genQuiz(seed: number, version: string) {
       continue;
     }
     genStrings(ansExp, ans, version);
-    if (matchStrings.length < 2 || matchStrings.length > genStringsCount - 2 ||
-      unmatchStrings.length < 2) {
+    if (matchStrings.length < 2 || unmatchStrings.length < 2) {
+      ans = null;
+      continue;
+    }
+    if (Number(currentVersion) >= 12 && !checkStrings()) {
       ans = null;
       continue;
     }
@@ -171,10 +174,7 @@ function genStrings(ansExp: RegExp, ans: string, version: string) {
   genStringsCount = random.get(5, 11);
   let ansLetters = [];
   _.forEach(ans, c => {
-    const cc = c.charCodeAt(0);
-    if ((cc >= '0'.charCodeAt(0) && cc <= '9'.charCodeAt(0)) ||
-      (cc >= 'a'.charCodeAt(0) && cc <= 'z'.charCodeAt(0)) ||
-      (cc >= 'A'.charCodeAt(0) && cc <= 'Z'.charCodeAt(0))) {
+    if (checkIsNumberOfAlphabet(c)) {
       ansLetters.push(c);
     }
   });
@@ -204,6 +204,52 @@ function genStrings(ansExp: RegExp, ans: string, version: string) {
       }
     }
   });
+}
+
+function checkStrings() {
+  let mws = createWords(matchStrings);
+  const umws = createWords(unmatchStrings);
+  mws = _.filter(mws, w => !_.some(umws, uw => w === uw));
+  return mws.length <= 0;
+}
+
+function createWords(strings: string[]) {
+  let ws = filterWords(strings[0]);
+  for (let i = 1; i < strings.length; i++) {
+    const nws = filterWords(strings[i]);
+    ws = _.filter(ws, w => _.some(nws, nw => nw === w));
+  }
+  return ws;
+}
+
+function filterWords(s: string) {
+  let ws = [];
+  let w = '';
+  _.forEach(s, c => {
+    if (checkIsNumberOfAlphabet(c)) {
+      w += c;
+      addWord(ws, w);
+    } else {
+      w = '';
+    }
+  });
+  return ws;
+}
+
+function addWord(ws: string[], w: string) {
+  for (let i = 0; i < w.length; i++) {
+    const pw = w.substr(i);
+    if (!_.some(ws, w => w === pw)) {
+      ws.push(pw);
+    }
+  }
+}
+
+function checkIsNumberOfAlphabet(c: string) {
+  const cc = c.charCodeAt(0);
+  return (cc >= '0'.charCodeAt(0) && cc <= '9'.charCodeAt(0)) ||
+    (cc >= 'a'.charCodeAt(0) && cc <= 'z'.charCodeAt(0)) ||
+    (cc >= 'A'.charCodeAt(0) && cc <= 'Z'.charCodeAt(0));
 }
 
 function endQuiz(time: number = null, version: string = currentVersion) {
